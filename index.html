@@ -19,32 +19,37 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; color: white; padding: 20px;
             display: flex; flex-direction: column; justify-content: space-between;
-            box-sizing: border-box; z-index: 10;
+            box-sizing: border-box; z-index: 20;
         }
         .menu-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 23, 0.9); display: flex; flex-direction: column;
+            background: rgba(2, 6, 23, 0.95); display: flex; flex-direction: column;
             align-items: center; justify-content: center; pointer-events: all; z-index: 50;
         }
         .btn {
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            padding: 12px 30px; border-radius: 50px; font-size: 1.2rem; font-weight: bold;
+            padding: 12px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: bold;
             cursor: pointer; transition: all 0.2s; border: none; color: white;
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.5);
+            text-align: center;
         }
         .btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
         
-        #skin-shop {
+        #skin-shop, #upgrade-menu {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #0f172a; border: 2px solid #3b82f6; border-radius: 24px;
-            padding: 24px; width: 90%; max-width: 500px; max-height: 80vh;
+            padding: 24px; width: 90%; max-width: 450px; max-height: 85vh;
             z-index: 100; display: none; pointer-events: all;
             box-shadow: 0 0 40px rgba(59, 130, 246, 0.4);
             overflow-y: auto;
         }
         .shop-section {
             background: rgba(255, 255, 255, 0.03);
-            border-radius: 16px; padding: 16px; margin-bottom: 16px;
+            border-radius: 16px; padding: 16px; margin-bottom: 12px;
             border: 1px solid rgba(59, 130, 246, 0.2);
         }
         .texture-preview {
@@ -85,104 +90,117 @@
             border-radius: 12px;
             margin-bottom: 4px;
         }
-
-        #announcement {
-            position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
-            font-size: 3rem; font-weight: 900; color: #fbbf24; text-shadow: 0 0 20px #b45309;
-            pointer-events: none; display: none; text-align: center; z-index: 60;
-        }
     </style>
 </head>
 <body id="game-container">
 
-<div id="ui-layer">
+<div id="ui-layer" style="display: none;">
     <div class="flex justify-between items-start w-full">
         <div class="pointer-events-auto">
             <div id="score" class="score-val">0</div>
             <div class="currency-badge">
                 <span id="money" class="text-lg font-bold text-yellow-400">0 🪙</span>
             </div>
-            <div class="currency-badge">
-                <span id="gems" class="text-lg font-bold text-cyan-400">0 💎</span>
-            </div>
         </div>
-        <div class="flex flex-col gap-2 pointer-events-auto">
-            <button class="btn !py-2 !px-6 !text-sm" onclick="toggleShop()">МАГАЗИН СКІНІВ 🎨</button>
-        </div>
-        <div class="text-right">
-            <div id="lives" class="score-val text-red-500">❤❤❤</div>
+        <div class="text-right pointer-events-auto">
+            <div id="lives" class="score-val text-red-500 mb-2">❤❤❤❤❤</div>
+            <button onclick="toggleUpgradeMenu()" class="bg-yellow-500/20 border border-yellow-500/50 px-3 py-1 rounded-lg text-yellow-400 text-xs font-bold hover:bg-yellow-500/40 transition-all">
+                UPGRADE (ESC) ⚡
+            </button>
         </div>
     </div>
     <div id="progress-container"><div id="progress-bar"></div></div>
     <div id="cooldown-ui"><div id="cooldown-bar"></div></div>
+    
+    <div id="booster-overlay" class="fixed bottom-10 right-5 text-right pointer-events-none">
+        <div id="timer-shield" class="font-bold text-blue-400 bg-black/50 px-2 py-1 rounded mb-1 hidden">🛡️ SHIELD</div>
+        <div id="timer-fire" class="font-bold text-yellow-400 bg-black/50 px-2 py-1 rounded hidden">🔥 RAPID FIRE</div>
+    </div>
 </div>
 
-<div id="announcement">BOSS INCOMING!</div>
+<div id="upgrade-menu">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-black text-yellow-400">ПОКРАЩЕННЯ</h2>
+        <button onclick="toggleUpgradeMenu()" class="text-gray-400 hover:text-white">✕</button>
+    </div>
+
+    <div class="shop-section">
+        <div class="flex justify-between items-center py-2 border-b border-white/5">
+            <div><p class="font-bold text-white text-sm">Швидкість Стрільби</p><p class="text-[10px] text-gray-400" id="lvl-fire">Рівень: 1</p></div>
+            <div class="flex items-center gap-3"><span class="text-yellow-400 font-bold text-sm" id="cost-fire">50 🪙</span><button class="bg-blue-600 px-3 py-1 rounded text-xs font-bold" onclick="buyUpgrade('fire')">КУПИТИ</button></div>
+        </div>
+        <div class="flex justify-between items-center py-2 border-b border-white/5">
+            <div><p class="font-bold text-white text-sm">Швидкість Корабля</p><p class="text-[10px] text-gray-400" id="lvl-speed">Рівень: 1</p></div>
+            <div class="flex items-center gap-3"><span class="text-yellow-400 font-bold text-sm" id="cost-speed">40 🪙</span><button class="bg-blue-600 px-3 py-1 rounded text-xs font-bold" onclick="buyUpgrade('speed')">КУПИТИ</button></div>
+        </div>
+        <div class="flex justify-between items-center py-2">
+            <div><p class="font-bold text-white text-sm">Ремонт</p><p class="text-[10px] text-gray-400">Відновити 1 ❤</p></div>
+            <div class="flex items-center gap-3"><span class="text-yellow-400 font-bold text-sm">100 🪙</span><button class="bg-blue-600 px-3 py-1 rounded text-xs font-bold" onclick="buyUpgrade('heal')">КУПИТИ</button></div>
+        </div>
+    </div>
+    <button class="w-full bg-blue-600 py-3 rounded-xl text-white font-bold mt-2" onclick="toggleUpgradeMenu()">ПОВЕРНУТИСЬ В БІЙ</button>
+</div>
 
 <div id="skin-shop">
     <div class="flex justify-between items-center mb-6">
-        <div>
-            <h2 class="text-2xl font-black text-blue-400">СКІН-ЦЕНТР</h2>
-            <p class="text-cyan-400 text-sm font-bold">Баланс: <span id="shop-gems">0</span> 💎</p>
-        </div>
+        <h2 class="text-2xl font-black text-blue-400">МАГАЗИН СКІНІВ</h2>
         <button onclick="toggleShop()" class="text-gray-400 hover:text-white">✕</button>
     </div>
     
+    <!-- Player Skin -->
     <div class="shop-section">
-        <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
-                <div id="prev-player" class="texture-preview">🚀</div>
-                <div><h3 class="font-bold text-sm">Корабель Гравця</h3></div>
-            </div>
+        <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-3"><div id="prev-player" class="texture-preview">🚀</div><h3 class="font-bold text-sm text-white">Корабель</h3></div>
             <label class="upload-btn">Завантажити<input type="file" class="hidden" accept="image/*" onchange="uploadSkin(event, 'player')"></label>
         </div>
-        <button onclick="resetSkin('player')" class="text-[10px] text-red-400 hover:underline">Скинути</button>
+        <button onclick="resetSkin('player')" class="text-[10px] text-red-400">Скинути</button>
     </div>
 
+    <!-- Bullet Skin -->
     <div class="shop-section">
-        <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
-                <div id="prev-stalker" class="texture-preview">👾</div>
-                <div><h3 class="font-bold text-sm">Сталкери</h3></div>
-            </div>
-            <label class="upload-btn">Завантажити<input type="file" class="hidden" accept="image/*" onchange="uploadSkin(event, 'stalker')"></label>
+        <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-3"><div id="prev-bullet" class="texture-preview">🔥</div><h3 class="font-bold text-sm text-white">Кулі</h3></div>
+            <label class="upload-btn">Завантажити<input type="file" class="hidden" accept="image/*" onchange="uploadSkin(event, 'bullet')"></label>
         </div>
-        <button onclick="resetSkin('stalker')" class="text-[10px] text-red-400 hover:underline">Скинути</button>
+        <button onclick="resetSkin('bullet')" class="text-[10px] text-red-400">Скинути</button>
     </div>
 
+    <!-- Asteroid Skin -->
     <div class="shop-section">
-        <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
-                <div id="prev-meteor" class="texture-preview">🌑</div>
-                <div><h3 class="font-bold text-sm">Метеорити</h3></div>
-            </div>
-            <label class="upload-btn">Завантажити<input type="file" class="hidden" accept="image/*" onchange="uploadSkin(event, 'meteor')"></label>
+        <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-3"><div id="prev-asteroid" class="texture-preview">🪨</div><h3 class="font-bold text-sm text-white">Астероїди</h3></div>
+            <label class="upload-btn">Завантажити<input type="file" class="hidden" accept="image/*" onchange="uploadSkin(event, 'asteroid')"></label>
         </div>
-        <button onclick="resetSkin('meteor')" class="text-[10px] text-red-400 hover:underline">Скинути</button>
+        <button onclick="resetSkin('asteroid')" class="text-[10px] text-red-400">Скинути</button>
     </div>
 
+    <!-- Map/Background Skin -->
     <div class="shop-section">
-        <div class="flex items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
-                <div id="prev-map" class="texture-preview">🌌</div>
-                <div><h3 class="font-bold text-sm">Мапа (Фон)</h3></div>
-            </div>
+        <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-3"><div id="prev-map" class="texture-preview">🌌</div><h3 class="font-bold text-sm text-white">Карта</h3></div>
             <label class="upload-btn">Завантажити<input type="file" class="hidden" accept="image/*" onchange="uploadSkin(event, 'map')"></label>
         </div>
-        <button onclick="resetSkin('map')" class="text-[10px] text-red-400 hover:underline">Скинути</button>
+        <button onclick="resetSkin('map')" class="text-[10px] text-red-400">Скинути</button>
     </div>
 
-    <button class="w-full bg-blue-600 py-3 rounded-xl font-bold mt-2" onclick="toggleShop()">ЗБЕРЕГТИ</button>
+    <button class="w-full bg-blue-600 py-3 rounded-xl text-white font-bold" onclick="toggleShop()">ГОТОВО</button>
 </div>
 
 <div id="start-menu" class="menu-overlay">
-    <h1 class="text-6xl font-black mb-8 text-blue-500 tracking-tighter text-center">SPACE DEFENDER</h1>
-    <button class="btn" onclick="startGame()">ГРАТИ</button>
+    <h1 class="text-6xl font-black mb-2 text-blue-500 text-center uppercase">Space Defender</h1>
+    <div class="flex flex-col gap-4 mt-8">
+        <button class="btn" onclick="startGame()">ПОЧАТИ ГРУ</button>
+        <button class="btn btn-secondary" onclick="toggleShop()">СКІНИ 🎨</button>
+    </div>
 </div>
 
 <div id="game-over-menu" class="menu-overlay" style="display: none;">
-    <h1 class="text-5xl font-black mb-4 text-red-500">ГРА ЗАКІНЧЕНА</h1>
-    <button class="btn" onclick="startGame()">РЕВАНШ</button>
+    <h1 class="text-5xl font-black mb-4 text-red-500 uppercase">Гра закінчена</h1>
+    <p class="text-white text-xl mb-8" id="final-score-text">Рахунок: 0</p>
+    <div class="flex flex-col gap-4">
+        <button class="btn" onclick="startGame()">РЕВАНШ</button>
+        <button class="btn btn-secondary" onclick="showMainMenu()">ГОЛОВНЕ МЕНЮ</button>
+    </div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -191,39 +209,34 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const shopUI = document.getElementById('skin-shop');
+    const upgradeUI = document.getElementById('upgrade-menu');
+    const startMenu = document.getElementById('start-menu');
+    const gameOverMenu = document.getElementById('game-over-menu');
+    const uiLayer = document.getElementById('ui-layer');
     const progressBar = document.getElementById('progress-bar');
     const cdBar = document.getElementById('cooldown-bar');
-    const announcement = document.getElementById('announcement');
     
-    let gameActive = false, score = 0, money = 0, gems = 0, lives = 3;
-    let player, bullets, enemyBullets, enemies, stars, stalkers, bosses;
+    let gameActive = false, isPaused = false;
+    let score = 0, money = 0, lives = 5;
+    let player, bullets, enemyBullets, enemies, stars, stalkers, boosts;
     let keys = {}, isMouseDown = false;
-    let bossSpawned = false;
+    let requestID;
     
-    const SHOOT_COOLDOWN_MS = 400;
-    const SCORE_TO_BOSS = 1000;
+    const upgradeStats = { fireLevel: 1, speedLevel: 1 };
+    const BASE_SHOOT_COOLDOWN = 350; 
+    const SCORE_TO_BOSS = 1500;
+    const MAX_STALKERS = 2; 
 
-    const skins = {
-        player: { img: null, preview: '🚀' },
-        stalker: { img: null, preview: '👾' },
-        meteor: { img: null, preview: '🌑' },
-        map: { img: null, preview: '🌌' }
+    const skins = { 
+        player: { img: null, default: '🚀' }, 
+        bullet: { img: null, default: '🔥' }, 
+        asteroid: { img: null, default: '🪨' },
+        map: { img: null, default: '🌌' } 
     };
 
     function resize() {
-        const oldW = canvas.width;
-        const oldH = canvas.height;
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
-        // Keep player in bounds after resize and maintain relative position
-        if (player) {
-            const xRatio = player.x / (oldW || canvas.width);
-            const yRatio = player.y / (oldH || canvas.height);
-            player.x = canvas.width * xRatio;
-            player.y = canvas.height * yRatio;
-            player.clamp();
-        }
     }
     window.addEventListener('resize', resize);
     resize();
@@ -234,9 +247,9 @@
         const reader = new FileReader();
         reader.onload = (e) => {
             const img = new Image();
-            img.onload = () => {
-                skins[type].img = img;
-                document.getElementById(`prev-${type}`).innerHTML = `<img src="${e.target.result}">`;
+            img.onload = () => { 
+                skins[type].img = img; 
+                document.getElementById(`prev-${type}`).innerHTML = `<img src="${e.target.result}">`; 
             };
             img.src = e.target.result;
         };
@@ -245,303 +258,321 @@
 
     function resetSkin(type) {
         skins[type].img = null;
-        const emojis = { player: '🚀', stalker: '👾', meteor: '🌑', map: '🌌' };
-        document.getElementById(`prev-${type}`).innerHTML = emojis[type];
+        document.getElementById(`prev-${type}`).innerHTML = skins[type].default;
     }
 
-    function toggleShop() {
-        shopUI.style.display = (shopUI.style.display === 'block') ? 'none' : 'block';
-        document.getElementById('shop-gems').innerText = gems;
+    function toggleShop() { shopUI.style.display = (shopUI.style.display === 'block') ? 'none' : 'block'; }
+    function toggleUpgradeMenu() {
+        if (!gameActive) return;
+        isPaused = !isPaused;
+        upgradeUI.style.display = isPaused ? 'block' : 'none';
+        updateUpgradeUI();
+    }
+
+    function updateUpgradeUI() {
+        document.getElementById('lvl-fire').innerText = `Рівень: ${upgradeStats.fireLevel}`;
+        document.getElementById('cost-fire').innerText = `${upgradeStats.fireLevel * 50} 🪙`;
+        document.getElementById('lvl-speed').innerText = `Рівень: ${upgradeStats.speedLevel}`;
+        document.getElementById('cost-speed').innerText = `${upgradeStats.speedLevel * 40} 🪙`;
+    }
+
+    function buyUpgrade(type) {
+        if (type === 'fire') {
+            const cost = upgradeStats.fireLevel * 50;
+            if (money >= cost) { money -= cost; upgradeStats.fireLevel++; }
+        } else if (type === 'speed') {
+            const cost = upgradeStats.speedLevel * 40;
+            if (money >= cost) { money -= cost; upgradeStats.speedLevel++; player.speed = 7 + (upgradeStats.speedLevel * 0.5); }
+        } else if (type === 'heal') {
+            if (money >= 100 && lives < 5) { money -= 100; lives++; }
+        }
+        updateUI();
+        updateUpgradeUI();
+    }
+
+    function showMainMenu() {
+        gameActive = false;
+        cancelAnimationFrame(requestID);
+        gameOverMenu.style.display = 'none';
+        uiLayer.style.display = 'none';
+        startMenu.style.display = 'flex';
     }
 
     class Player {
         constructor() {
-            this.w = 50; this.h = 50;
-            this.x = canvas.width/2; this.y = canvas.height-100;
-            this.speed = 6;
+            this.w = 45; this.h = 45; // Reduced from 60
+            this.x = canvas.width/2; this.y = canvas.height-120;
+            this.speed = 7 + (upgradeStats.speedLevel * 0.5);
             this.lastShot = 0;
+            this.hitboxRadius = 18; // Slightly smaller hitbox
+            this.boosts = { shield: 0, rapidFire: 0 };
         }
         draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
+            ctx.save(); ctx.translate(this.x, this.y);
+            if (this.boosts.shield > 0) {
+                ctx.beginPath(); ctx.arc(0, 0, 32, 0, Math.PI * 2);
+                ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3; ctx.stroke();
+            }
             if (skins.player.img) {
                 ctx.drawImage(skins.player.img, -this.w/2, -this.h/2, this.w, this.h);
             } else {
                 ctx.fillStyle = '#3b82f6'; ctx.beginPath();
-                ctx.moveTo(0, -25); ctx.lineTo(-20, 20); ctx.lineTo(20, 20); ctx.fill();
+                ctx.moveTo(0, -this.h/2); ctx.lineTo(-18, 18); ctx.lineTo(18, 18); ctx.fill();
             }
             ctx.restore();
-        }
-        clamp() {
-            this.x = Math.max(this.w/2, Math.min(canvas.width - this.w/2, this.x));
-            this.y = Math.max(this.h/2, Math.min(canvas.height - this.h/2, this.y));
         }
         update() {
             if (keys['KeyA'] || keys['ArrowLeft']) this.x -= this.speed;
             if (keys['KeyD'] || keys['ArrowRight']) this.x += this.speed;
             if (keys['KeyW'] || keys['ArrowUp']) this.y -= this.speed;
             if (keys['KeyS'] || keys['ArrowDown']) this.y += this.speed;
-            
-            this.clamp();
+            this.x = Math.max(30, Math.min(canvas.width - 30, this.x));
+            this.y = Math.max(30, Math.min(canvas.height - 30, this.y));
+            if (this.boosts.shield > 0) this.boosts.shield--;
+            if (this.boosts.rapidFire > 0) this.boosts.rapidFire--;
 
             const now = Date.now();
-            const elapsed = now - this.lastShot;
-            const cdPercent = Math.min(100, (elapsed / SHOOT_COOLDOWN_MS) * 100);
-            cdBar.style.width = cdPercent + '%';
-
-            if (isMouseDown && elapsed >= SHOOT_COOLDOWN_MS) {
-                bullets.push(new Bullet(this.x, this.y - 20));
+            let cd = BASE_SHOOT_COOLDOWN - (upgradeStats.fireLevel * 25);
+            if (this.boosts.rapidFire > 0) cd /= 2;
+            
+            cdBar.style.width = Math.min(100, ((now - this.lastShot) / cd) * 100) + '%';
+            if (isMouseDown && now - this.lastShot >= cd) {
+                bullets.push(new Bullet(this.x, this.y - 25));
                 this.lastShot = now;
             }
         }
+        takeDamage() {
+            if (this.boosts.shield > 0) { this.boosts.shield = 0; return false; }
+            lives--; return true;
+        }
     }
 
-    class Boss {
+    class Enemy {
         constructor() {
-            this.x = canvas.width/2; this.y = -100;
-            this.w = 120; this.h = 100;
-            this.health = 20;
-            this.speed = 2;
-            this.targetY = 150;
-            this.shootTimer = 0;
+            this.r = 20 + Math.random() * 25;
+            this.x = Math.random() * (canvas.width - 50) + 25;
+            this.y = -50;
+            this.speed = 1.8 + Math.random() * 2.5; 
+            this.vertices = [];
+            const segments = 8;
+            for (let i = 0; i < segments; i++) {
+                const angle = (i / segments) * Math.PI * 2;
+                const v = 0.8 + Math.random() * 0.4;
+                this.vertices.push({ x: Math.cos(angle) * this.r * v, y: Math.sin(angle) * this.r * v });
+            }
+            this.color = `rgb(${60+Math.random()*40}, ${60+Math.random()*40}, ${60+Math.random()*40})`;
             this.destroyed = false;
         }
         draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            // Health Bar
-            ctx.fillStyle = '#1e293b'; ctx.fillRect(-60, -70, 120, 10);
-            ctx.fillStyle = '#ef4444'; ctx.fillRect(-60, -70, (this.health/20)*120, 10);
-            
-            ctx.fillStyle = '#7c3aed';
-            ctx.beginPath();
-            ctx.moveTo(0, 50); ctx.lineTo(-60, -50); ctx.lineTo(60, -50);
-            ctx.fill();
+            ctx.save(); ctx.translate(this.x, this.y);
+            if (skins.asteroid.img) {
+                ctx.drawImage(skins.asteroid.img, -this.r, -this.r, this.r * 2, this.r * 2);
+            } else {
+                ctx.beginPath(); ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
+                for(let v of this.vertices) ctx.lineTo(v.x, v.y);
+                ctx.closePath(); ctx.fillStyle = this.color; ctx.fill();
+            }
             ctx.restore();
         }
-        update() {
-            if (this.y < this.targetY) this.y += this.speed;
-            this.x += Math.sin(Date.now()/500) * 3;
-            
-            if (++this.shootTimer > 40) {
-                enemyBullets.push(new EnemyBullet(this.x - 30, this.y + 40));
-                enemyBullets.push(new EnemyBullet(this.x, this.y + 40));
-                enemyBullets.push(new EnemyBullet(this.x + 30, this.y + 40));
-                this.shootTimer = 0;
-            }
-        }
+        update() { this.y += this.speed; if (this.y > canvas.height + 50) this.destroyed = true; }
     }
 
     class Stalker {
         constructor() {
-            this.x = Math.random() * canvas.width; this.y = -50;
-            this.w = 40; this.h = 40;
-            this.speed = player.speed * 0.37;
-            this.shootTimer = 0;
-            this.destroyed = false;
+            this.x = Math.random() * canvas.width; this.y = -60;
+            this.speedY = 1.5; 
+            this.trackStrength = 0.02; 
+            this.shootTimer = 0; this.destroyed = false;
         }
         draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            if (skins.stalker.img) {
-                ctx.drawImage(skins.stalker.img, -this.w/2, -this.h/2, this.w, this.h);
-            } else {
-                ctx.fillStyle = '#ef4444'; ctx.beginPath();
-                ctx.moveTo(0, 15); ctx.lineTo(-15, -15); ctx.lineTo(15, -15); ctx.fill();
-            }
+            ctx.save(); ctx.translate(this.x, this.y);
+            ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.moveTo(0, 15); ctx.lineTo(-15, -15); ctx.lineTo(15, -15); ctx.fill();
             ctx.restore();
         }
         update() {
-            this.y = Math.min(this.y + 2, 100);
-            const dx = player.x - this.x;
-            this.x += Math.sign(dx) * Math.min(Math.abs(dx), this.speed);
-            if (++this.shootTimer > 90) {
+            this.y = Math.min(this.y + this.speedY, 150);
+            this.x += (player.x - this.x) * this.trackStrength;
+            
+            if (++this.shootTimer > 78) {
                 enemyBullets.push(new EnemyBullet(this.x, this.y + 20));
                 this.shootTimer = 0;
             }
         }
     }
 
-    class Enemy {
-        constructor() {
-            this.r = 20 + Math.random() * 20;
-            this.x = Math.random() * canvas.width; this.y = -this.r;
-            this.speed = player.speed * 0.37;
-            this.rotation = 0;
-            this.rotSpeed = (Math.random() - 0.5) * 0.05;
-            this.destroyed = false;
-            this.vertices = [];
-            const points = 7 + Math.floor(Math.random() * 5);
-            for(let i=0; i<points; i++) {
-                const angle = (i / points) * Math.PI * 2;
-                const dist = this.r * (0.7 + Math.random() * 0.4);
-                this.vertices.push({x: Math.cos(angle) * dist, y: Math.sin(angle) * dist});
-            }
-        }
-        draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.rotation);
-            if (skins.meteor.img) {
-                ctx.drawImage(skins.meteor.img, -this.r, -this.r, this.r*2, this.r*2);
+    class Bullet {
+        constructor(x, y) { this.x = x; this.y = y; this.speed = 12; this.r = 8; this.destroyed = false; }
+        draw() { 
+            ctx.save(); ctx.translate(this.x, this.y);
+            if (skins.bullet.img) {
+                ctx.drawImage(skins.bullet.img, -this.r, -this.r, this.r * 2, this.r * 2);
             } else {
-                ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.fillStyle = '#1e293b';
-                ctx.beginPath();
-                ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
-                for(let v of this.vertices) ctx.lineTo(v.x, v.y);
-                ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(0, 0, this.r, 0, Math.PI*2); ctx.fill(); 
             }
             ctx.restore();
         }
-        update() { 
-            this.y += this.speed; 
-            this.rotation += this.rotSpeed;
-            if (this.y > canvas.height + 50) this.destroyed = true;
-        }
-    }
-
-    class Bullet {
-        constructor(x, y) { this.x = x; this.y = y; this.speed = 12; this.r = 4; this.destroyed = false; }
-        draw() { 
-            ctx.fillStyle = '#fbbf24'; ctx.shadowBlur = 10; ctx.shadowColor = '#fbbf24';
-            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0;
-        }
-        update() { this.y -= this.speed; if (this.y < -20) this.destroyed = true; }
+        update() { this.y -= this.speed; if (this.y < -50) this.destroyed = true; }
     }
 
     class EnemyBullet {
-        constructor(x, y) { this.x = x; this.y = y; this.speed = 7; this.r = 4; this.destroyed = false; }
+        constructor(x, y) { this.x = x; this.y = y; this.speed = 3.5; this.r = 5; this.destroyed = false; }
         draw() { ctx.fillStyle = '#f87171'; ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill(); }
-        update() { this.y += this.speed; if (this.y > canvas.height + 20) this.destroyed = true; }
+        update() { this.y += this.speed; if (this.y > canvas.height + 50) this.destroyed = true; }
+    }
+
+    class Boost {
+        constructor(x, y) {
+            this.x = x; this.y = y;
+            const r = Math.random();
+            if (r < 0.33) this.type = 'shield';
+            else if (r < 0.66) this.type = 'rapidFire';
+            else this.type = 'extraLife'; 
+            
+            this.r = 15; this.destroyed = false;
+        }
+        draw() {
+            if (this.type === 'shield') ctx.fillStyle = '#3b82f6';
+            else if (this.type === 'rapidFire') ctx.fillStyle = '#fbbf24';
+            else ctx.fillStyle = '#ef4444'; 
+            
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2); ctx.fill();
+            
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            let icon = this.type === 'shield' ? 'S' : (this.type === 'rapidFire' ? 'F' : '❤');
+            ctx.fillText(icon, this.x, this.y);
+        }
+        update() { 
+            this.y += 2; 
+            if (Math.hypot(player.x - this.x, player.y - this.y) < 40) {
+                if (this.type === 'shield') player.boosts.shield = 600;
+                else if (this.type === 'rapidFire') player.boosts.rapidFire = 600;
+                else if (this.type === 'extraLife') { if (lives < 5) lives++; }
+                this.destroyed = true;
+            }
+            if (this.y > canvas.height) this.destroyed = true;
+        }
     }
 
     function init() {
         player = new Player();
-        bullets = []; enemyBullets = []; enemies = []; stalkers = []; bosses = [];
-        stars = Array.from({length: 150}, () => ({
-            x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-            s: 0.5 + Math.random() * 2, opacity: 0.1 + Math.random() * 0.9,
-            fade: (Math.random() * 0.02) * (Math.random() > 0.5 ? 1 : -1)
-        }));
-        score = 0; money = 0; lives = 3; bossSpawned = false;
+        bullets = []; enemyBullets = []; enemies = []; stalkers = []; boosts = [];
+        stars = Array.from({length: 60}, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, s: Math.random() * 2 }));
+        score = 0; lives = 5; isPaused = false;
         updateUI();
     }
 
     function updateUI() {
         document.getElementById('score').innerText = score;
         document.getElementById('money').innerText = `${money} 🪙`;
-        document.getElementById('gems').innerText = `${gems} 💎`;
-        document.getElementById('lives').innerText = '❤'.repeat(Math.max(0, lives));
+        document.getElementById('lives').innerText = '❤'.repeat(lives);
         progressBar.style.height = Math.min(100, (score/SCORE_TO_BOSS)*100) + '%';
+        document.getElementById('timer-shield').style.display = player.boosts.shield > 0 ? 'block' : 'none';
+        document.getElementById('timer-fire').style.display = player.boosts.rapidFire > 0 ? 'block' : 'none';
     }
 
     function startGame() {
-        init(); gameActive = true;
-        document.getElementById('start-menu').style.display = 'none';
-        document.getElementById('game-over-menu').style.display = 'none';
-        requestAnimationFrame(gameLoop);
+        cancelAnimationFrame(requestID);
+        init(); 
+        gameActive = true;
+        startMenu.style.display = 'none'; 
+        gameOverMenu.style.display = 'none';
+        uiLayer.style.display = 'flex';
+        requestID = requestAnimationFrame(gameLoop);
     }
 
-    function gameOver() {
-        gameActive = false;
-        document.getElementById('game-over-menu').style.display = 'flex';
-    }
-
-    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keydown', e => { 
+        keys[e.code] = true; 
+        if (e.code === 'Escape') toggleUpgradeMenu(); 
+    });
     window.addEventListener('keyup', e => keys[e.code] = false);
     window.addEventListener('mousedown', () => isMouseDown = true);
     window.addEventListener('mouseup', () => isMouseDown = false);
-    window.addEventListener('touchstart', (e) => { isMouseDown = true; e.preventDefault(); }, {passive: false});
-    window.addEventListener('touchend', () => isMouseDown = false);
 
     function gameLoop() {
         if (!gameActive) return;
-        
-        if (skins.map.img) {
-            ctx.drawImage(skins.map.img, 0, 0, canvas.width, canvas.height);
-        } else {
-            ctx.fillStyle = '#020617'; ctx.fillRect(0,0, canvas.width, canvas.height);
-        }
-
-        stars.forEach(s => {
-            s.opacity += s.fade;
-            if (s.opacity > 1 || s.opacity < 0.1) s.fade *= -1;
-            ctx.fillStyle = `rgba(255, 255, 255, ${s.opacity})`;
-            ctx.beginPath(); ctx.arc(s.x, s.y, s.s, 0, Math.PI * 2); ctx.fill();
-            s.y += s.s * 0.5;
-            if(s.y > canvas.height) { s.y = -10; s.x = Math.random() * canvas.width; }
-        });
-
-        if (score >= SCORE_TO_BOSS && !bossSpawned) {
-            bossSpawned = true;
-            announcement.style.display = 'block';
-            setTimeout(() => { announcement.style.display = 'none'; bosses.push(new Boss()); }, 2000);
-        }
-
-        player.update(); player.draw();
-
-        if (bosses.length === 0) {
-            if (Math.random() < 0.012) enemies.push(new Enemy());
-            if (Math.random() < 0.0018 && stalkers.length < 3) stalkers.push(new Stalker());
-        }
-
-        bullets.forEach(b => { b.update(); b.draw(); });
-        enemyBullets.forEach(eb => { 
-            eb.update(); eb.draw(); 
-            if (Math.hypot(player.x - eb.x, player.y - eb.y) < 20) {
-                eb.destroyed = true; lives--; updateUI();
-                if (lives <= 0) gameOver();
+        if (!isPaused) {
+            // Draw background (Map Skin or solid color)
+            if (skins.map.img) {
+                ctx.drawImage(skins.map.img, 0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.fillStyle = '#020617'; ctx.fillRect(0,0, canvas.width, canvas.height);
             }
-        });
+            
+            // Draw stars (only if no map skin or overlaying)
+            stars.forEach(s => {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; ctx.beginPath(); ctx.arc(s.x, s.y, s.s, 0, Math.PI*2); ctx.fill();
+                s.y += 0.5; if (s.y > canvas.height) s.y = 0;
+            });
 
-        bosses.forEach(b => {
-            b.update(); b.draw();
-            bullets.forEach(bul => {
-                if (Math.hypot(bul.x - b.x, bul.y - b.y) < 60) {
-                    bul.destroyed = true; b.health--;
-                    if (b.health <= 0) {
-                        b.destroyed = true;
-                        gems += 1;
-                        score = 0;
-                        bossSpawned = false;
-                        updateUI();
+            player.update(); player.draw();
+            
+            // Asteroid spawn rate
+            if (Math.random() < 0.021) enemies.push(new Enemy());
+            // Enemy (Stalker) spawn rate - reduced from 0.0018 to 0.001
+            if (Math.random() < 0.001 && stalkers.length < MAX_STALKERS) stalkers.push(new Stalker());
+
+            bullets.forEach(b => { 
+                b.update(); b.draw(); 
+                enemies.forEach(en => {
+                    if (!b.destroyed && !en.destroyed && Math.hypot(b.x - en.x, b.y - en.y) < en.r + 5) {
+                        en.destroyed = b.destroyed = true; 
+                        score += 10; 
+                        money += 2; 
+                        if (Math.random() < 0.075) boosts.push(new Boost(en.x, en.y));
+                    }
+                });
+                stalkers.forEach(st => {
+                    if (!b.destroyed && !st.destroyed && Math.hypot(b.x - st.x, b.y - st.y) < 25) {
+                        st.destroyed = b.destroyed = true; 
+                        score += 50; 
+                        money += 10; 
+                        if (Math.random() < 0.15) boosts.push(new Boost(st.x, st.y));
+                    }
+                });
+            });
+
+            enemyBullets.forEach(eb => {
+                eb.update(); eb.draw();
+                if (!eb.destroyed && Math.hypot(player.x - eb.x, player.y - eb.y) < player.hitboxRadius) {
+                    eb.destroyed = true; 
+                    if (player.takeDamage()) {
+                        if (lives <= 0) {
+                            gameActive = false; 
+                            document.getElementById('final-score-text').innerText = "Рахунок: " + score;
+                            gameOverMenu.style.display = 'flex'; 
+                        }
                     }
                 }
             });
-        });
 
-        enemies.forEach(en => {
-            en.update(); en.draw();
-            if (Math.hypot(player.x - en.x, player.y - en.y) < en.r + 15) {
-                en.destroyed = true; lives--; updateUI();
-                if (lives <= 0) gameOver();
-            }
-            bullets.forEach(b => {
-                if (Math.hypot(b.x - en.x, b.y - en.y) < en.r) {
-                    en.destroyed = true; b.destroyed = true;
-                    score += 10; money += 5; updateUI();
+            enemies.forEach(e => {
+                e.update(); e.draw();
+                if (!e.destroyed && Math.hypot(player.x - e.x, player.y - e.y) < player.hitboxRadius + e.r*0.7) {
+                    e.destroyed = true; 
+                    if (player.takeDamage()) {
+                        if (lives <= 0) {
+                            gameActive = false; 
+                            document.getElementById('final-score-text').innerText = "Рахунок: " + score;
+                            gameOverMenu.style.display = 'flex'; 
+                        }
+                    }
                 }
             });
-        });
 
-        stalkers.forEach(st => {
-            st.update(); st.draw();
-            bullets.forEach(b => {
-                if (Math.hypot(b.x - st.x, b.y - st.y) < 25) {
-                    st.destroyed = true; b.destroyed = true;
-                    score += 50; money += 20; updateUI();
-                }
-            });
-        });
+            stalkers.forEach(s => { s.update(); s.draw(); });
+            boosts.forEach(bo => { bo.update(); bo.draw(); });
 
-        bullets = bullets.filter(b => !b.destroyed);
-        enemyBullets = enemyBullets.filter(eb => !eb.destroyed);
-        enemies = enemies.filter(en => !en.destroyed);
-        stalkers = stalkers.filter(st => !st.destroyed);
-        bosses = bosses.filter(b => !b.destroyed);
-
-        requestAnimationFrame(gameLoop);
+            enemies = enemies.filter(e => !e.destroyed);
+            stalkers = stalkers.filter(s => !s.destroyed);
+            bullets = bullets.filter(b => !b.destroyed);
+            enemyBullets = enemyBullets.filter(eb => !eb.destroyed);
+            boosts = boosts.filter(bo => !bo.destroyed);
+            updateUI();
+        }
+        requestID = requestAnimationFrame(gameLoop);
     }
 </script>
 </body>
